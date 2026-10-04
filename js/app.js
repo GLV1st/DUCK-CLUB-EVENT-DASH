@@ -39,20 +39,61 @@ const defaultEvents = [
   }
 ];
 
-let events = loadEvents();
-let selectedEventId = events[0]?.id || null;
+let events = [];
+let selectedEventId = null;
 
-function loadEvents() {
+function loadLocalEvents() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try { return JSON.parse(saved); } catch (_) {}
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultEvents));
-  return defaultEvents;
+  return null;
 }
 
-function saveEvents() {
+async function saveEvents() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  try {
+    events = await DuckClubAPI.saveData(events);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    updateApiStatus();
+    return true;
+  } catch (error) {
+    console.error("Could not save event data to Azure Storage", error);
+    updateApiStatus();
+    alert(`The item could not be saved to Azure Storage.\n\n${error.message}`);
+    return false;
+  }
+}
+
+async function initialiseData() {
+  const status = document.getElementById("apiStatus");
+  status.textContent = "Connecting…";
+
+  try {
+    const remoteEvents = await DuckClubAPI.loadData();
+    const localEvents = loadLocalEvents();
+
+    if (remoteEvents.length) {
+      events = remoteEvents;
+    } else if (localEvents?.length) {
+      events = localEvents;
+      await DuckClubAPI.saveData(events);
+    } else {
+      events = defaultEvents;
+      await DuckClubAPI.saveData(events);
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    selectedEventId = events[0]?.id || null;
+    render();
+    status.textContent = "API online";
+  } catch (error) {
+    console.error("Could not load event data from Azure Storage", error);
+    events = loadLocalEvents() || defaultEvents;
+    selectedEventId = events[0]?.id || null;
+    render();
+    status.textContent = "API not connected";
+  }
 }
 
 function selectedEvent() {
@@ -228,7 +269,7 @@ function openTaskModal(category, taskId = null) {
   `;
 
   document.getElementById("cancelModal").addEventListener("click", closeModal);
-  document.getElementById("taskForm").addEventListener("submit", e => {
+  document.getElementById("taskForm").addEventListener("submit", async e => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const values = {
@@ -250,9 +291,11 @@ function openTaskModal(category, taskId = null) {
       });
     }
 
-    saveEvents();
-    closeModal();
-    render();
+    const saved = await saveEvents();
+    if (saved) {
+      closeModal();
+      render();
+    }
   });
 }
 
@@ -260,24 +303,24 @@ function closeModal() {
   document.getElementById("modalRoot").innerHTML = "";
 }
 
-function toggleTask(taskId) {
+async function toggleTask(taskId) {
   const event = selectedEvent();
   const task = event.tasks.find(t => t.id === taskId);
   if (task) {
     task.complete = !task.complete;
-    saveEvents();
-    render();
+    const saved = await saveEvents();
+    if (saved) render();
   }
 }
 
-function deleteTask(taskId) {
+async function deleteTask(taskId) {
   const event = selectedEvent();
   const task = event.tasks.find(t => t.id === taskId);
   if (!task) return;
   if (!confirm(`Delete "${task.name}"?`)) return;
   event.tasks = event.tasks.filter(t => t.id !== taskId);
-  saveEvents();
-  render();
+  const saved = await saveEvents();
+  if (saved) render();
 }
 
 document.getElementById("addEventButton").addEventListener("click", () => {
@@ -298,7 +341,7 @@ document.getElementById("addEventButton").addEventListener("click", () => {
   `;
 
   document.getElementById("cancelEvent").addEventListener("click", closeModal);
-  document.getElementById("eventForm").addEventListener("submit", e => {
+  document.getElementById("eventForm").addEventListener("submit", async e => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     const event = {
@@ -309,9 +352,11 @@ document.getElementById("addEventButton").addEventListener("click", () => {
     };
     events.push(event);
     selectedEventId = event.id;
-    saveEvents();
-    closeModal();
-    render();
+    const saved = await saveEvents();
+    if (saved) {
+      closeModal();
+      render();
+    }
   });
 });
 
@@ -329,4 +374,4 @@ async function updateApiStatus() {
 }
 
 render();
-updateApiStatus();
+initialiseData();

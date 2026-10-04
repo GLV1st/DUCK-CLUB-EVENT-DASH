@@ -1,9 +1,11 @@
 # Duck Club Event Dashboard API
 
-This folder contains the Azure Functions API used by the Static Web App.
+The API runs as Azure Functions inside the Azure Static Web App.
 
-Current endpoint:
+## Azure Storage
 
-GET /api/health
+The API stores events in the `DuckClubEvents` Azure Table and event items/tasks in the `DuckClubTasks` Azure Table.
 
-Storage-backed event/task endpoints will be added after the API deployment is confirmed.
+Configure one of these application settings in the Static Web App: `DUCKCLUB_STORAGE_CONNECTION` (recommended), `AZURE_STORAGE_CONNECTION_STRING`, or `AzureWebJobsStorage`.
+
+The frontend uses `/api/data` to load and save the complete event dashboard.

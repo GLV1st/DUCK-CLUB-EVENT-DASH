@@ -1,20 +1,14 @@
 # Duck Club Event Dashboard
 
-Event management and readiness dashboard for Duck Club events.
+Event management dashboard for Duck Club events.
 
-## Current build
+## Storage
 
-- Event tabs
-- Add new event
-- Event readiness percentage
-- Categories for Paperwork, Equipment, People, Payments, Venue, Promotion, Logistics and Other
-- Add, edit, delete and complete checklist items
-- Due dates and priorities
-- Local browser storage for the prototype
-- Azure Functions `/api/health` endpoint
+The dashboard now uses the Azure Functions API and Azure Table Storage as its source of truth. The API creates these tables automatically:
 
-## Architecture
+- `DuckClubEvents`
+- `DuckClubTasks`
 
-Frontend and Azure Functions API are deployed together through Azure Static Web Apps.
+Set the Azure Static Web App application setting `DUCKCLUB_STORAGE_CONNECTION` to the Azure Storage connection string. The API also accepts `AZURE_STORAGE_CONNECTION_STRING` or `AzureWebJobsStorage`.
 
-Azure Storage (`rdceventstorage`) will be connected after the API deployment is confirmed.
+The browser keeps a local cache as a fallback, but saves are sent to Azure Storage automatically.
