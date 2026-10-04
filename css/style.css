@@ -92,6 +92,17 @@ h2 { margin: 0; font-size: 34px; color: var(--navy); }
 }
 .primary-button:hover, .small-button:hover { background: var(--blue-dark); }
 
+.danger-button {
+  border: 1px solid #efcaca;
+  border-radius: 8px;
+  background: #fff5f5;
+  color: var(--red);
+  padding: 9px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.danger-button:hover { background: #fbe8e8; }
+
 .event-tabs {
   display: flex;
   gap: 8px;
@@ -133,6 +144,7 @@ h2 { margin: 0; font-size: 34px; color: var(--navy); }
   align-items: flex-start;
 }
 .event-title h3 { margin: 0; font-size: 25px; color: var(--navy); }
+.event-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
 .event-title p { margin: 6px 0 0; color: var(--muted); }
 
 .progress-box { min-width: 260px; }

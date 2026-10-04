@@ -151,8 +151,13 @@ function renderEvent() {
     <div class="event-summary">
       <div class="event-summary-top">
         <div class="event-title">
-          <h3>${escapeHtml(event.name)}</h3>
-          <p>${formatDate(event.date)}</p>
+          <div class="event-title-row">
+            <div>
+              <h3>${escapeHtml(event.name)}</h3>
+              <p>${formatDate(event.date)}</p>
+            </div>
+            <button class="danger-button" id="deleteEventButton" type="button">Delete Event</button>
+          </div>
         </div>
         <div class="progress-box">
           <div class="progress-label"><span>Event readiness</span><span>${progress}%</span></div>
@@ -171,6 +176,8 @@ function renderEvent() {
       ${categories.map(category => renderCategory(event, category)).join("")}
     </div>
   `;
+
+  document.getElementById("deleteEventButton").addEventListener("click", deleteSelectedEvent);
 
   document.querySelectorAll("[data-add-task]").forEach(button => {
     button.addEventListener("click", () => openTaskModal(button.dataset.addTask));
@@ -301,6 +308,32 @@ function openTaskModal(category, taskId = null) {
 
 function closeModal() {
   document.getElementById("modalRoot").innerHTML = "";
+}
+
+async function deleteSelectedEvent() {
+  const event = selectedEvent();
+  if (!event) return;
+
+  const taskCount = event.tasks.length;
+  const message = taskCount
+    ? `Delete "${event.name}" and its ${taskCount} item${taskCount === 1 ? "" : "s"}?\n\nThis cannot be undone.`
+    : `Delete "${event.name}"?\n\nThis cannot be undone.`;
+
+  if (!confirm(message)) return;
+
+  const deletedIndex = events.findIndex(item => item.id === event.id);
+  events = events.filter(item => item.id !== event.id);
+
+  if (events.length) {
+    selectedEventId = events[Math.max(0, Math.min(deletedIndex, events.length - 1))].id;
+  } else {
+    selectedEventId = null;
+  }
+
+  const saved = await saveEvents();
+  if (saved) {
+    render();
+  }
 }
 
 async function toggleTask(taskId) {
