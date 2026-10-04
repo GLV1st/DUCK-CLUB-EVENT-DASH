@@ -8,12 +8,15 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="brand">
-      <div class="brand-icon">🦆</div>
-      <div>
-        <h1>Duck Club</h1>
-        <p>Event Dashboard</p>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">🦆</div>
+        <div>
+          <h1>Duck Club</h1>
+          <p>Event Dashboard</p>
+        </div>
       </div>
+      <div class="header-status" id="apiStatus">Checking API…</div>
     </div>
   </header>
 
@@ -21,15 +24,20 @@
     <section class="page-heading">
       <div>
         <p class="eyebrow">EVENT MANAGEMENT</p>
-        <h2>Your Events</h2>
-        <p class="intro">Track paperwork, equipment, people, payments and everything else needed to make your event ready.</p>
+        <h2>Event Dashboard</h2>
+        <p class="intro">Track paperwork, equipment, people, payments and everything needed to make each event ready.</p>
       </div>
       <button class="primary-button" id="addEventButton">+ Add New Event</button>
     </section>
 
-    <section id="eventsGrid" class="events-grid"></section>
+    <section id="eventTabs" class="event-tabs"></section>
+
+    <section id="eventPanel" class="event-panel"></section>
   </main>
 
+  <div id="modalRoot"></div>
+
+  <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,15 @@
+{
+  "name": "duck-club-event-dash-api",
+  "version": "1.0.0",
+  "description": "Azure Functions API for the Duck Club Event Dashboard",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
