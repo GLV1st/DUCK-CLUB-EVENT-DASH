@@ -188,7 +188,7 @@ function renderEvent() {
   });
 
   document.querySelectorAll("[data-edit-task]").forEach(button => {
-    button.addEventListener("click", () => openTaskModal(button.dataset.editTask, button.dataset.category));
+    button.addEventListener("click", () => openTaskModal(button.dataset.category, button.dataset.editTask));
   });
 
   document.querySelectorAll("[data-delete-task]").forEach(button => {
