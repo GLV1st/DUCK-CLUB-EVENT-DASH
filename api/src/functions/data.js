@@ -68,26 +68,29 @@ async function readAll(clients) {
 }
 
 async function replaceAll(clients, events) {
-  for await (const entity of clients.events.listEntities()) {
-    await clients.events.deleteEntity(entity.partitionKey, entity.rowKey);
-  }
-
-  for await (const entity of clients.tasks.listEntities()) {
-    await clients.tasks.deleteEntity(entity.partitionKey, entity.rowKey);
-  }
+  // Synchronise by key rather than deleting every row first. This avoids
+  // transient missing-resource errors and preserves attachment metadata.
+  const desiredEventKeys = new Set();
+  const desiredTaskKeys = new Set();
 
   for (const event of events) {
+    const eventId = String(event.id);
+    desiredEventKeys.add(`EVENT|${eventId}`);
+
     await clients.events.upsertEntity({
       partitionKey: "EVENT",
-      rowKey: String(event.id),
+      rowKey: eventId,
       name: String(event.name || ""),
       date: String(event.date || "")
     }, "Replace");
 
     for (const task of event.tasks || []) {
+      const taskId = String(task.id);
+      desiredTaskKeys.add(`${eventId}|${taskId}`);
+
       await clients.tasks.upsertEntity({
-        partitionKey: String(event.id),
-        rowKey: String(task.id),
+        partitionKey: eventId,
+        rowKey: taskId,
         category: String(task.category || "Other"),
         name: String(task.name || ""),
         assignedTo: String(task.assignedTo || ""),
@@ -97,6 +100,29 @@ async function replaceAll(clients, events) {
         complete: Boolean(task.complete),
         attachments: JSON.stringify(task.attachments || [])
       }, "Replace");
+    }
+  }
+
+  // Remove only records no longer present in the submitted dashboard state.
+  for await (const entity of clients.tasks.listEntities()) {
+    const key = `${entity.partitionKey}|${entity.rowKey}`;
+    if (!desiredTaskKeys.has(key)) {
+      try {
+        await clients.tasks.deleteEntity(entity.partitionKey, entity.rowKey);
+      } catch (error) {
+        if (error.statusCode !== 404) throw error;
+      }
+    }
+  }
+
+  for await (const entity of clients.events.listEntities()) {
+    const key = `${entity.partitionKey}|${entity.rowKey}`;
+    if (!desiredEventKeys.has(key)) {
+      try {
+        await clients.events.deleteEntity(entity.partitionKey, entity.rowKey);
+      } catch (error) {
+        if (error.statusCode !== 404) throw error;
+      }
     }
   }
 }
