@@ -52,7 +52,8 @@ async function readAll(clients) {
       dueDate: entity.dueDate || "",
       priority: entity.priority || "Medium",
       notes: entity.notes || "",
-      complete: entity.complete === true || entity.complete === "true"
+      complete: entity.complete === true || entity.complete === "true",
+      attachments: entity.attachments ? JSON.parse(entity.attachments) : []
     };
 
     if (!tasksByEvent.has(entity.partitionKey)) tasksByEvent.set(entity.partitionKey, []);
@@ -93,7 +94,8 @@ async function replaceAll(clients, events) {
         dueDate: String(task.dueDate || ""),
         priority: String(task.priority || "Medium"),
         notes: String(task.notes || ""),
-        complete: Boolean(task.complete)
+        complete: Boolean(task.complete),
+        attachments: JSON.stringify(task.attachments || [])
       }, "Replace");
     }
   }

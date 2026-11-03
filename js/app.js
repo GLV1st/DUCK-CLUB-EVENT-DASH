@@ -266,6 +266,22 @@ function openTaskModal(category, taskId = null) {
             <label>Notes</label>
             <textarea name="notes" placeholder="Optional notes">${escapeHtml(task?.notes || "")}</textarea>
           </div>
+          ${task ? `
+            <div class="form-field attachment-field">
+              <label>Documents (${(task.attachments || []).length})</label>
+              <div class="attachment-list">
+                ${(task.attachments || []).map(a => `
+                  <div class="attachment-row">
+                    <span class="attachment-name">${escapeHtml(a.name)}</span>
+                    <button type="button" class="icon-button" data-download-attachment="${escapeAttr(a.id)}">Download</button>
+                    <button type="button" class="icon-button" data-delete-attachment="${escapeAttr(a.id)}">Remove</button>
+                  </div>
+                `).join("") || `<span class="muted">No documents attached yet.</span>`}
+              </div>
+              <input type="file" id="taskAttachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+              <small>PDF, Word, Excel or image. Maximum 10 MB per file.</small>
+            </div>
+          ` : `<p class="muted">Save the action item first, then edit it to attach documents.</p>`}
           <div class="modal-actions">
             <button type="button" class="secondary-button" id="cancelModal">Cancel</button>
             <button type="submit" class="primary-button">Save Item</button>
@@ -276,6 +292,14 @@ function openTaskModal(category, taskId = null) {
   `;
 
   document.getElementById("cancelModal").addEventListener("click", closeModal);
+  document.querySelectorAll("[data-download-attachment]").forEach(button => {
+    button.addEventListener("click", () => downloadAttachment(task, button.dataset.downloadAttachment));
+  });
+  document.querySelectorAll("[data-delete-attachment]").forEach(button => {
+    button.addEventListener("click", () => removeAttachment(task, button.dataset.deleteAttachment));
+  });
+  const uploadInput = document.getElementById("taskAttachment");
+  if (uploadInput) uploadInput.addEventListener("change", () => uploadAttachment(event.id, task, uploadInput));
   document.getElementById("taskForm").addEventListener("submit", async e => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -304,6 +328,57 @@ function openTaskModal(category, taskId = null) {
       render();
     }
   });
+}
+
+async function uploadAttachment(eventId, task, input) {
+  const file = input.files?.[0];
+  if (!file || !task) return;
+  const form = new FormData();
+  form.append("eventId", eventId);
+  form.append("taskId", task.id);
+  form.append("file", file);
+  try {
+    const response = await fetch("/api/attachments", { method: "POST", body: form });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    task.attachments = task.attachments || [];
+    task.attachments.push(result.attachment);
+    const saved = await saveEvents();
+    if (saved) openTaskModal(task.category, task.id);
+  } catch (error) {
+    alert(`Upload failed: ${error.message}`);
+    input.value = "";
+  }
+}
+
+async function downloadAttachment(task, attachmentId) {
+  const attachment = (task.attachments || []).find(a => a.id === attachmentId);
+  if (!attachment) return;
+  try {
+    const query = new URLSearchParams({ eventId: selectedEvent().id, taskId: task.id, attachmentId });
+    const response = await fetch(`/api/attachments?${query}`);
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    window.open(result.url, "_blank", "noopener");
+  } catch (error) {
+    alert(`Download failed: ${error.message}`);
+  }
+}
+
+async function removeAttachment(task, attachmentId) {
+  const attachment = (task.attachments || []).find(a => a.id === attachmentId);
+  if (!attachment || !confirm(`Remove "${attachment.name}"?`)) return;
+  try {
+    const query = new URLSearchParams({ eventId: selectedEvent().id, taskId: task.id, attachmentId });
+    const response = await fetch(`/api/attachments?${query}`, { method: "DELETE" });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    task.attachments = task.attachments.filter(a => a.id !== attachmentId);
+    const saved = await saveEvents();
+    if (saved) openTaskModal(task.category, task.id);
+  } catch (error) {
+    alert(`Could not remove attachment: ${error.message}`);
+  }
 }
 
 function closeModal() {

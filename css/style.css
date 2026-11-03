@@ -265,3 +265,9 @@ h2 { margin: 0; font-size: 34px; color: var(--navy); }
   .task-table th:nth-child(3), .task-table td:nth-child(3),
   .task-table th:nth-child(5), .task-table td:nth-child(5) { display:none; }
 }
+
+.attachment-field { grid-column: 1 / -1; }
+.attachment-list { display:flex; flex-direction:column; gap:7px; margin:6px 0 10px; }
+.attachment-row { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#f5f7fa; border-radius:7px; }
+.attachment-name { flex:1; overflow-wrap:anywhere; }
+.attachment-field small, .muted { color:#687386; font-size:12px; }
